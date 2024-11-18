@@ -242,7 +242,23 @@ Some commands support <command> [<subcommand> ...] {{-h, --help}} for further in
         return self.completecommands({
             '':['invoke','revoke'],
         },text,line,begidx,endidx)
-
+    def do_testgoto(self, line):
+        """
+        Test goto with a single quest.
+        """
+        logger.info("Starting test for goto...")
+        # 定义一个 Operation 实例
+        self.work = fgoKernel.Operation()
+        quest = (1, 0, 5, 0)  # 示例任务
+        times = 3  # 执行次数
+        self.work.append((quest, times))
+        logger.debug(f"Added quest {quest} with times {times} to work.")
+        
+        # 调用 __call__() 执行任务
+        logger.info("Calling self.work to execute tasks...")
+        self.work.__call__()
+        logger.info("Test for goto completed.")
+        
 class ArgError(Exception):pass
 def validator(type,func,desc='\b'):
     def f(x):

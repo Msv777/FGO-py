@@ -150,29 +150,52 @@ def bench(times=20,touch=True,screenshot=True):
     }
 @serialize(mutex)
 def goto(quest):
-    while not Detect(0,1).isMainInterface():pass
+    print(f"来自goto(): Starting goto for quest: {quest}")
+    while not Detect(0, 1).isMainInterface():
+        pass
     fgoDevice.device.press(' ')
-    if Detect(.6).isTerminal():fgoDevice.device.perform(' ',(600,))
+    if Detect(.6).isTerminal():
+        fgoDevice.device.perform(' ', (600,))
     else:
-        fgoDevice.device.perform('S',(1500,))
-        while not Detect(.4).isMainInterface():pass
-    if quest[0]!=3:
-        while not Detect(.4).isQuestListBegin():fgoDevice.device.swipe((1000,200),(1000,600))
-        while not((p:=Detect(.4).findChapter(quest[:1]))and(fgoDevice.device.touch(p),True)[1]):fgoDevice.device.swipe((1000,600),(1000,200))
+        fgoDevice.device.perform('S', (1500,))
+        while not Detect(.4).isMainInterface():
+            pass
+    if quest[0] != 3:
+        while not Detect(.4).isQuestListBegin():
+            fgoDevice.device.swipe((1000, 200), (1000, 600))
+        while not ((p := Detect(.4).findChapter(quest[:1])) and (fgoDevice.device.touch(p), True)[1]):
+            fgoDevice.device.swipe((1000, 600), (1000, 200))
         schedule.sleep(.6)
-    while not Detect(.4).isQuestListBegin():fgoDevice.device.swipe((1000,200),(1000,600))
-    while not((p:=Detect(.4).findChapter(quest[:2]))and(fgoDevice.device.touch(p),True)[1]):fgoDevice.device.swipe((1000,600),(1000,200))
-    while not Detect(.4,.4).isMainInterface():pass
+    while not Detect(.4).isQuestListBegin():
+        fgoDevice.device.swipe((1000, 200), (1000, 600))
+    while not ((p := Detect(.4).findChapter(quest[:2])) and (fgoDevice.device.touch(p), True)[1]):
+        fgoDevice.device.swipe((1000, 600), (1000, 200))
+    while not Detect(.4, .4).isMainInterface():
+        pass
     if quest[0]:
         fgoDevice.device.press('\xBF')
-        while cv2.pointPolygonTest(mapPoly,p:=(640,360)+(v:=questData[quest]-Detect(1).findMapCamera(quest[:2])),False)<=0:(lambda v:fgoDevice.device.swipe((640,360)+v,(640,360)-v))(v*min(590/abs(v[0]),310/abs(v[1]),.5))
-        fgoDevice.device.perform('  ',(300,300))
+        map_camera_position = Detect(1).findMapCamera(quest[:2])
+        print(f"来自goto(): Map camera position: {map_camera_position}")
+        quest_position = questData[quest]
+        print(f"来自goto(): Quest position in questData: {quest_position}")
+        relative_position = quest_position - map_camera_position
+        print(f"来自goto(): Relative position: {relative_position}")
+        while cv2.pointPolygonTest(
+            mapPoly, p := (640, 360) + (v := relative_position), False
+        ) <= 0:
+            swipe_vector = v * min(590 / abs(v[0]), 310 / abs(v[1]), .5)
+            fgoDevice.device.swipe((640, 360) + swipe_vector, (640, 360) - swipe_vector)
+        fgoDevice.device.perform('  ', (300, 300))
         fgoDevice.device.touch(p)
     for _ in range(4):
-        if Detect(.4).isQuestListBegin():break
-        fgoDevice.device.swipe((1000,200),(1000,600))
-    while not Detect(.4).isQuestFreeContains(quest[0]):fgoDevice.device.swipe((1000,600),(1000,200))
-    while not Detect(.4).isQuestFreeFirst(quest[0]):fgoDevice.device.swipe((1000,395),(1000,300))
+        if Detect(.4).isQuestListBegin():
+            break
+        fgoDevice.device.swipe((1000, 200), (1000, 600))
+    while not Detect(.4).isQuestFreeContains(quest[0]):
+        fgoDevice.device.swipe((1000, 600), (1000, 200))
+    while not Detect(.4).isQuestFreeFirst(quest[0]):
+        fgoDevice.device.swipe((1000, 395), (1000, 300))
+
 @serialize(mutex)
 def weeklyMission():
     while not Detect(0,1).isMainInterface():pass
@@ -563,16 +586,24 @@ class Main:
                 if Detect.cache.isNoFriend():
                     schedule.sleep(10)
                     fgoDevice.device.perform('\xBAK',(500,1000))
-class Operation(list,Main):
-    def __init__(self,data=(),*args,**kwargs):
-        list.__init__(self,data)
-        Main.__init__(self,*args,**kwargs)
+class Operation(list, Main):
+    def __init__(self, data=(), *args, **kwargs):
+        list.__init__(self, data)
+        Main.__init__(self, *args, **kwargs)
+
     def __call__(self):
+        print("来自operation(): Preparing operation...")
         super().prepare()
-        if not self:super().__call__()
+        if not self:
+            print("来自operation(): No tasks in operation queue.")
+            return
         while self:
-            quest,times=self[0]
+            quest, times = self[0]
+            print(f"来自operation(): Processing quest: {quest}, times: {times}")
             del self[0]
             goto(quest)
-            super().__call__(quest[-1],self.battleCount+times)
+            # 注释掉以下以跳过战斗
+            # super().__call__(quest[-1], self.battleCount + times)
+        print("来自operation(): Operation complete.")
+
     def prepare(self):pass
