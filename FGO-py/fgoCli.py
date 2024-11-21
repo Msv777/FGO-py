@@ -4,6 +4,11 @@ import fgoKernel
 from functools import reduce,wraps
 from fgoLogging import getLogger,color
 from fgoTeamupParser import IniParser
+# new
+from fgoDetect import Detect
+from fgoImageListener import ImageListener
+import subprocess
+import psutil
 logger=getLogger('Cli')
 
 prompt='FGO-py@{Device}({Team})> 'if os.getenv('NO_COLOR')else'FGO-py\033[32m@{Device}\033[36m({Team})\033[0m> '
@@ -258,7 +263,89 @@ Some commands support <command> [<subcommand> ...] {{-h, --help}} for further in
         logger.info("Calling self.work to execute tasks...")
         self.work.__call__()
         logger.info("Test for goto completed.")
+    def do_launchfgo(self, line):
+        """
+        Launch FGO using MuMu emulator.
+        Usage: launchfgo
+        """
+        try:
+            command = r"D:\Program Files\mumu\emulator\MuMuPlayer-12.0\shell\MuMuPlayer.exe"
+            args = ["-p", "com.bilibili.fatego", "-v", "0"]
+            print(f"Launching FGO using: {command} {' '.join(args)}")
+            subprocess.Popen([command] + args, shell=False)
+            print("MuMu emulator started successfully.")
+        except Exception as e:
+            print(f"Failed to launch FGO: {e}")
+    def do_waitLogin(self, line):
+        """
+        Wait for the login screen, click detected positions, and stop when any flag image is detected.
+        """
+        assert fgoDevice.device.available, "Device not connected."
+        print("Waiting for login screen and flag images...")
         
+        # 加载图片资源
+        loginImg = ImageListener('fgoImage/login/')
+        flagImg = ImageListener('fgoImage/login/flag/')
+        start_time = time.time()
+        restart_count = 0  # 重启次数
+        while True:
+            detect = Detect(0.5)
+            # 检测 flag 图片
+            for flag_name, flag_template in flagImg.items():
+                if (flag_pos := detect.findLogin(flag_template,0.05)):
+                    print(f"Detected flag image '{flag_name}' at {flag_pos}. Stopping detection.")
+                    return  # 检测到 flag 图后停止
+            
+            # 检测 login 图片并点击
+            for login_name, login_template in loginImg.items():
+                if (login_pos := detect.findLogin(login_template,0.1)):
+                    print(f"Detected login image '{login_name}' at {login_pos}. Clicking...")
+                    fgoDevice.device.touch(login_pos)
+           
+            # 如果超过30秒未检测到图片，重启并重新开始
+            if time.time() - start_time > 30:
+                restart_count += 1
+                print("Timeout reached, restarting FGO...")
+                self.do_restartfgo("")  # 调用重启方法
+                print(f"No image detected for 30 seconds. Restarting FGO... (Restart count: {restart_count})")
+                time.sleep(10)
+                start_time = time.time()  # 重置计时器，重新开始等待登录
+                print("Retrying to detect login screen...")
+            time.sleep(0.5)  # 每 0.5 秒检测一次
+    def do_restartfgo(self, line):
+        """
+        Kill MuMuPlayer process, restart FGO, and attempt to connect to the device.
+        """
+        print("Restarting FGO...")
+
+        # Step 1: 查找并杀死 MuMuPlayer 进程
+        muMuProcessName = "MuMuPlayer.exe"
+        for proc in psutil.process_iter(['pid', 'name']):
+            if proc.info['name'] and muMuProcessName in proc.info['name']:
+                try:
+                    print(f"Killing process {proc.info['name']} (PID {proc.info['pid']})...")
+                    proc.kill()
+                except Exception as e:
+                    print(f"Error killing process {proc.info['name']}: {e}")
+
+        # Step 2: 启动 MuMuPlayer 并加载 FGO
+        print("Launching MuMuPlayer with FGO...")
+        try:
+            self.do_launchfgo("")
+        except Exception as e:
+            print(f"Error launching FGO: {e}")
+            return
+
+        # Step 3: 等待 10 秒让设备完成启动
+        print("Waiting for 10 seconds to allow MuMuPlayer to initialize...")
+        time.sleep(20)
+
+        # Step 4: 尝试连接到设备
+        print("Attempting to connect to device at 127.0.0.1:7555...")
+        try:
+            self.do_connect("127.0.0.1:7555")
+        except Exception as e:
+            print(f"Error connecting to device: {e}")           
 class ArgError(Exception):pass
 def validator(type,func,desc='\b'):
     def f(x):

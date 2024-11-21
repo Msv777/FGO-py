@@ -190,6 +190,8 @@ class XDetectBase(metaclass=logMeta(logger)):
     def getTeamServantHouguLv(self):raise NotImplementedError
     def getTeamServantRank(self):raise NotImplementedError
     def getTeamServantSkillLv(self):raise NotImplementedError
+    def findLogin(self, img,t = 0.5):
+        return self._find(img,(0,0,1280,720),t)    
 class XDetectCN(XDetectBase,metaclass=logMeta(logger)):
     tmpl=IMG_CN
     ocr=OCR.ZHS

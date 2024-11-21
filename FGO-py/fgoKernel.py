@@ -93,7 +93,7 @@ def lottery():
 # @serialize(mutex)
 # def mining():
 #     while fuse.value<30:
-#         if Detect().isMining():fgoDevice.device.perform('K',(300,))
+#         if Detect().isMining():fgoDevice.device.perform('K' ,(300,))
 #         fgoDevice.device.perform('9Z',(300,300))
 @serialize(mutex)
 def mail():
