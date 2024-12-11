@@ -301,6 +301,10 @@ Some commands support <command> [<subcommand> ...] {{-h, --help}} for further in
                 if (login_pos := detect.findLogin(login_template,0.1)):
                     print(f"Detected login image '{login_name}' at {login_pos}. Clicking...")
                     fgoDevice.device.touch(login_pos)
+                    start_time = time.time()
+                    print("")
+                    print(f"the time reset,is{start_time}")
+                    print(f"stime-time,is{time.time() - start_time}")
            
             # 如果超过30秒未检测到图片，重启并重新开始
             if time.time() - start_time > 30:

@@ -595,6 +595,7 @@ class Operation(list, Main):
         print("来自operation(): Preparing operation...")
         super().prepare()
         if not self:
+            super().__call__()
             print("来自operation(): No tasks in operation queue.")
             return
         while self:
@@ -603,7 +604,7 @@ class Operation(list, Main):
             del self[0]
             goto(quest)
             # 注释掉以下以跳过战斗
-            # super().__call__(quest[-1], self.battleCount + times)
+            super().__call__(quest[-1], self.battleCount + times)
         print("来自operation(): Operation complete.")
 
     def prepare(self):pass
