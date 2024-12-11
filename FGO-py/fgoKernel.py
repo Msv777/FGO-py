@@ -597,7 +597,6 @@ class Operation(list, Main):
         if not self:
             super().__call__()
             print("来自operation(): No tasks in operation queue.")
-            return
         while self:
             quest, times = self[0]
             print(f"来自operation(): Processing quest: {quest}, times: {times}")
